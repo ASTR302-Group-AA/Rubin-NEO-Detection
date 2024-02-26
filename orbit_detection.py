@@ -34,14 +34,20 @@ def detector(filename, objID):
         if deltaT < 90:
             detections.append(TIME[i])
     
-    detected = []
-    for j in range(len(detections) - 1):
-        deltaT = (detections[j+1] - detections[j]).to_value("sec") / 604800 #converting to weeks between detections
-        if deltaT < 2:
-            detected.append(detections[j+1].to_value("iso"))
+    for k in range(len(detections) - 1):
+        deltaT = (detections[k+1] - detections[k]).to_value("sec") / 3600 #converting to hours between detections
+        if deltaT < 12:
+            detections.delete(detections[k])
     
-    if len(detected) >= 3:
-        output_text = f'Object {objID} was successfully detected. Paired observations occured: {detected}.'
+    detected = []
+    for j in range(len(detections) - 2):
+        deltaT = (detections[j+2] - detections[j]).to_value("sec") / 604800 #converting to weeks between detections
+        if deltaT < 2:
+            detected.append(detections[j+2].to_value("iso"))
+            
+    
+    if len(detected) >= 1:
+        output_text = f'Object {objID} was successfully detected. Third pair of observations occured: {detected[0]}.'
         output = True
     else:
         output_text = f'Object {objID} was not detected.'
