@@ -14,9 +14,7 @@ def detector(filename, objID):
         objID - the ID of the desired object
     Outputs:
         output - boolean value on if the object was detected
-        output_text - message including the boolean value and the dates of the second observation in a detection pair
-        
-    Doesn't sort by date yet, need to create test suite.
+        output_text - message including the boolean value and the dates of the second observation in a detection pair        
         '''
     
     data = QTable.read(filename)
@@ -25,32 +23,42 @@ def detector(filename, objID):
     
     data.sort(['FieldMJD_TAI'])
     
-    TIME = Time(data['FieldMJD_TAI'], format = 'mjd')
-    # obj = data['ObjID'][data['ObjID'] == objID]
+    TIME = Time(data['FieldMJD_TAI'], format = 'mjd') - 0.67 #changing all times to noon local time
+    output = False
     
-    detections = []
+    pairs = []
     for i in range(len(data) - 1):
-        deltaT = (TIME[i+1] - TIME[i]).to_value("sec") / 60 #converting to minutes between observations
-        if deltaT < 90:
-            detections.append(TIME[i])
+        deltaT = (TIME[i+1] - TIME[i])
+        if deltaT < .0625: #90 minutes = .0625 days
+            pairs.append(TIME[i])
+    if len(pairs) < 2:
+        output_text = f'Object {objID} was not detected. Error: No observation pairs.'
+        return output, output_text
     
-    for k in range(len(detections) - 1):
-        deltaT = (detections[k+1] - detections[k]).to_value("sec") / 3600 #converting to hours between detections
-        if deltaT < 12:
-            detections.delete(detections[k])
+    days = []
+
+    for k in range(len(pairs)):
+        days.append(pairs[k])
+        if len(days)>1:
+            for l in range(len(days) - 1):
+                if int(pairs[k].value) - int(days[l].value) == 0:
+                    days.pop(-1)
+    if len(days) < 3:
+        output_text = f'Object {objID} was not detected. Error: Not 3 days.'
+        return output, output_text
     
-    detected = []
-    for j in range(len(detections) - 2):
-        deltaT = (detections[j+2] - detections[j]).to_value("sec") / 604800 #converting to weeks between detections
-        if deltaT < 2:
-            detected.append(detections[j+2].to_value("iso"))
-            
-    
-    if len(detected) >= 1:
-        output_text = f'Object {objID} was successfully detected. Third pair of observations occured: {detected[0]}.'
+    detected = False
+    j = 0
+    while np.logical_and(j < len(days) - 2, detected == False):
+        if (int(days[j+2].value) - int(days[j].value)) <= 14:
+            detected = True
+        j+=1
+        
+    if (detected):
+        output_text = f'Object {objID} was successfully detected. Third pair of observations occured: {days[j+1].to_value("iso")}.'
         output = True
     else:
-        output_text = f'Object {objID} was not detected.'
+        output_text = f'Object {objID} was not detected. Error: More than 2 weeks.'
         output = False
     
     return output, output_text
