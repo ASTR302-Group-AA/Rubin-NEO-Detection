@@ -19,7 +19,7 @@ def detector(filename, objID):
     
     data = QTable.read(filename)
     
-    data = data[[data['ObjID'] == objID]]
+    data = data[[data['ObjID'] == str(objID)]]
     
     data.sort(['FieldMJD_TAI'])
     
