@@ -19,19 +19,19 @@ def detector(filename, objID):
     
     data = QTable.read(filename)
     
-    #names = data['ObjID']
-    
+    # Iterates through data table, adding a boolean value for each index:
+    # TRUE if that index's ObjID is the object we are checking to see if
+    # we detected. FALSE if the ObjID doesn't match.
     right_name = []
-    for i in range(len(data)):
+    for i in range(len(data)): # Its too late to feel bad about using for loops
         if str(data['ObjID'][i]) == objID:
             right_name.append(True)
             
         else:
             right_name.append(False)
     
-    return right_name
-    
-    #data = data[data['ObjID'] == objID]
+    # Only take data with the right name.
+    data = data[right_name]
     
     data.sort(['FieldMJD_TAI'])
     
