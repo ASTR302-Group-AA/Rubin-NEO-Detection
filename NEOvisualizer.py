@@ -38,10 +38,15 @@ class NEOvisualizer:
         x,y,z = self.trueAnom2pos(trueAnom)
         return x,y,z
     
-    def getPositionAt(self, time):
+    def getPositionAt(self, time=None):
         # return current (at init_time) x,y,z position
-        days_since_epoch = np.ceil(self.time - self.epoch)
-        timeline = np.linspace(self.epoch, self.time, int(days_since_epoch))
+        # time must be in JD TDB
+        if time is None:
+            days_since_epoch = np.ceil(self.time - self.epoch)
+            timeline = np.linspace(self.epoch, self.time, int(days_since_epoch))
+        else: # if time is specified
+            days_since_epoch = np.ceil(time - self.epoch)
+            timeline = np.linspace(self.epoch, time, int(days_since_epoch))
         trueAnom = self.ecc2trueAnom(self.getEccAnom(timeline))
         x,y,z = self.trueAnom2pos(trueAnom)
         return x[-1], y[-1], z[-1] #current position
@@ -90,7 +95,7 @@ class NEOvisualizer:
         Z= x*(np.sin(self.i)*np.sin(self.w)) + y*(np.sin(self.i)*np.cos(self.w))
         return X,Y,Z
         
-
+############## Non-class Function ##############
         
 def plotEarth(ax, showOrbit=True):
     # Orbital Elements
