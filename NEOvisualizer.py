@@ -57,13 +57,13 @@ class NEOvisualizer:
         ax.plot(x,y,z, color='#ced3db', linestyle='-')
         if showNEO:
             # plot NEO in today's position
-            x,y,z = self.getPositionAt(self.init_time)
+            x,y,z = self.getPositionAt(self.time)
             ax.scatter(x,y,z, color='cyan', s=20)
             
         
     def plotNEO(self, ax):
         # plot NEO in today's position
-        x,y,z = self.getPositionAt(self.init_time)
+        x,y,z = self.getPositionAt(self.time)
         ax.scatter(x,y,z, color='cyan', s=20)
         
             
