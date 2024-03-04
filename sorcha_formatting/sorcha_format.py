@@ -6,6 +6,8 @@ def sorcha_format(filename):
     
     sorcha_data = pd.read_csv(filename)
     
+    #from the jpl Small-Bo, choose the following columns: prim. desg, H, epoch_mjd, e, a, i, node, peri, M
+    
     renamed_columns = sorcha_data.rename(columns={"pdes":"ObjID",
                                                   "epoch_mjd":"epochMJD_TDB", "i":"inc",
                                                   "om":"node", "w":"argPeri", "H":"H_r"})
@@ -14,7 +16,9 @@ def sorcha_format(filename):
     orbit_file.insert(0, 'ObjID', renamed_columns['ObjID'], allow_duplicates = False)
     orbit_file.insert(1, 'FORMAT', 'KEP', allow_duplicates = False)
     
-    #take the following generalized values for an asteroid's color profile: 
+    #take the following generalized values for an asteroid's color profile given in
+    #the sorcha demo file. The exact astroid this data comes from is the first line 
+    #in the sorcha demo file
     #u-r g-r i-r z-r y-r GS
     #1.72 0.48 -0.11 -0.12 -0.12 0.15
     
