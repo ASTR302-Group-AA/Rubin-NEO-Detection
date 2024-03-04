@@ -54,7 +54,7 @@ class NEOvisualizer:
     def plotOrbit(self, ax, showNEO=True):
         # plot orbit
         x,y,z = self.getOrbit()
-        ax.plot(x,y,z, color='#ced3db', linestyle='-')
+        ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=0.5)
         if showNEO:
             # plot NEO in today's position
             x,y,z = self.getPositionAt(self.time)
