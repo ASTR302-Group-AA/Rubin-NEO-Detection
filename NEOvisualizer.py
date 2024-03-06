@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from astropy.time import Time
 from mpl_toolkits.mplot3d import axes3d
 import pandas as pd
+import secrets
 
 class NEOvisualizer:
     """
@@ -58,13 +59,18 @@ class NEOvisualizer:
         if showNEO:
             # plot NEO in today's position
             x,y,z = self.getPositionAt(self.time)
-            ax.scatter(x,y,z, color='cyan', s=20)
+            colors = ['xkcd:aquamarine', 'xkcd:pink', 'xkcd:goldenrod', 'xkcd:lavender', 'xkcd:khaki']
+            ax.scatter(x,y,z, color=secrets.choice(colors), s=20)
             
         
-    def plotNEO(self, ax):
+    def plotNEO(self, ax, colorStr=None):
         # plot NEO in today's position
         x,y,z = self.getPositionAt(self.time)
-        ax.scatter(x,y,z, color='cyan', s=20)
+        if colorStr is None:
+            colors = ['xkcd:aquamarine', 'xkcd:pink', 'xkcd:goldenrod', 'xkcd:lavender', 'xkcd:khaki']
+            ax.scatter(x,y,z, color=secrets.choice(colors), s=20)
+        else:
+            ax.scatter(x,y,z, color=colorStr, s=20)
         
             
     def getEccAnom(self, time, tol=0.000000001):
