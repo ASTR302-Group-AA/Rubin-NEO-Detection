@@ -13,12 +13,40 @@ import secrets
 
 class NEOvisualizer:
     """
-        docstring goes here 
+    NEOvisualizer class holds orbital elements. NEOvisulizer object takes in matplotlib axes and plots its approximate orbit and/or position at a given time.
         
     Attributes:
+    a : float
+        Semimajor Axis (AU)
+    e : float
+        Eccentricity (dimensionless)
+    i : float
+        Inclination with respect to J2000 ecliptic (deg)
+    om : float
+        Longitude of the Ascending Node with respect to J2000 ecliptic (deg)
+    w : float
+        Argument of perihelion (periapsis) with respect to J2000 ecliptic (deg)
+    ma : float
+        Mean Anomaly at Epoch (deg)
+    n : float
+        Mean Orbital Motion (deg/d)
+    epoch : float
+        Reference Epoch (in TDB scale Julian Days)
+    init_time : astropy.time Time object
+        Time at which the object is instantiated.
+    time : float
+        init_time value in TDB scale Julian Days.
     
     """
+    
     def __init__(self, obj):
+        """
+        Parameters
+        ----------
+        obj : Pandas.Series
+            Series object containing columns a, e, i, om, w, ma, n, epoch (in AU, deg, JD TDB)
+        """
+        
         # self.elem = elem
         self.a = obj.a
         self.e = obj.e
@@ -33,14 +61,37 @@ class NEOvisualizer:
         
         
     def getOrbit(self):
-        # return x,y,z for all pos corresponding to each step in true anomaly from -pi to pi or 0 to 2 pi or whatever
+        """
+        Returns x, y, z components (AU) of one cycle of the orbit that can be plotted.
+        """
+        
+        # return x,y,z for all pos corresponding to each step in true anomaly from -pi to pi or 0 to 2 pi
         ecc = np.linspace(-np.pi, np.pi, 500)
         trueAnom = self.ecc2trueAnom(ecc)
         x,y,z = self.trueAnom2pos(trueAnom)
         return x,y,z
     
     def getPositionAt(self, time=None):
-        # return current (at init_time) x,y,z position
+        """
+        Returns x, y, z components (AU) of the NEO's position at either time of instance or user specified time.
+        
+        Parameters
+        ----------
+        time (Optional) : float
+            User specified time for the object's position
+            defaults to current time if not specified.
+            
+        Returns
+        -------
+        x : float
+            x component of position at given time (AU)
+        y : float
+            y component of position at given time (AU)
+        z : float
+            z component of position at given time (AU)
+        """
+        
+        # return x,y,z position at either init time or user specified time
         # time must be in JD TDB
         if time is None:
             days_since_epoch = np.ceil(self.time - self.epoch)
@@ -53,6 +104,17 @@ class NEOvisualizer:
         return x[-1], y[-1], z[-1] #current position
     
     def plotOrbit(self, ax, showNEO=True):
+        """
+        Takes in matplotlib 3d subplot axes onto which the orbit of the NEO is plotted. Also plots the current position of the NEO unless otherwise specified.
+        
+        Parameters
+        ----------
+        ax : matplotlib.axes._subplots.Axes3DSubplot
+            Axes from a 3d subplot for orbit and position to be plotted on.
+        showNEO (Optional) : bool
+            Whether the current position of the object to be displayed. Defaults to True unless otherwise specified.
+        """
+        
         # plot orbit
         x,y,z = self.getOrbit()
         ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=0.5)
@@ -63,9 +125,27 @@ class NEOvisualizer:
             ax.scatter(x,y,z, color=secrets.choice(colors), s=20)
             
         
-    def plotNEO(self, ax, colorStr=None):
-        # plot NEO in today's position
-        x,y,z = self.getPositionAt(self.time)
+    def plotNEO(self, ax, colorStr=None, time=None):
+        """
+        Takes in matplotlib 3d subplot axes onto which the position of the NEO is plotted. Supports user specified (1) color for NEO, and (2) particular time of interest for position.
+        
+        Parameters
+        ----------
+        ax : matplotlib.axes._subplots.Axes3DSubplot
+            Axes from a 3d subplot for the position to be plotted on.
+        colorStr (Optional) : string
+            matplotlib readable color string. Defaults to colors['xkcd:aquamarine', 'xkcd:pink', 'xkcd:goldenrod', 'xkcd:lavender', 'xkcd:khaki'] unless otherwise specified
+        time (Optional) : float
+            User specified time of interest. Defaults to current time unless otherwise specified.
+        """
+        
+        # Time condition
+        if time is None:
+            x,y,z = self.getPositionAt(self.time)
+        else:
+            x,y,z = self.getPositionAt(time)
+        
+        # Color condition
         if colorStr is None:
             colors = ['xkcd:aquamarine', 'xkcd:pink', 'xkcd:goldenrod', 'xkcd:lavender', 'xkcd:khaki']
             ax.scatter(x,y,z, color=secrets.choice(colors), s=20)
@@ -73,9 +153,24 @@ class NEOvisualizer:
             ax.scatter(x,y,z, color=colorStr, s=20)
         
             
-    def getEccAnom(self, time, tol=0.000000001):
+    def getEccAnom(self, timeline, tol=0.00000001):
+        """
+        Returns eccentric anomaly:
+        Computes mean anomaly from mean anomaly at epoch and epoch, then computes eccentric anomaly from mean anomaly using numerical root finding method
+        
+        Parameters
+        ----------
+        timeline : array-like
+            Considered time (in JD TDB) to be converted to the corresponding mean anomaly.
+            
+        Returns
+        -------
+        E : array-like
+            Eccentric anomaly. Same data type and dimensions as the input.
+        """
+        
         # converts mean anomaly to eccentric anomaly using Newton-Rhapson root finding method
-        M = self.ma + self.n*(time - self.epoch)
+        M = self.ma + self.n*(timeline - self.epoch)
         E = M # Eccentric anomaly, initial value set equal to mean anomaly
         err = 1;
         while np.all(err >= tol):
@@ -85,11 +180,37 @@ class NEOvisualizer:
         return E
     
     def ecc2trueAnom(self, eccAnom):
+        """
+        Converts eccentric anomaly to true anomaly.
+        
+        Parameters
+        ----------
+        eccAnom : array-like
+            Eccentric anomaly. 
+            
+        Returns
+        -------
+        trueAnom : array-like
+            True anomaly. Same data type and dimensions as the input.
+        """
         # converts eccentric anomaly to true anomaly using arctan2 (2 arguments)
         trueAnom = 2*np.arctan2(np.sqrt(1+self.e)*np.sin(eccAnom/2), np.sqrt(1-self.e)*np.cos(eccAnom/2))
         return trueAnom
     
     def trueAnom2pos(self, trueAnom):
+        """
+        Returns x, y, z components of positions (in J2000 ecliptic reference frame) corresponding to the input true anomaly.
+        
+        Parameters
+        ----------
+        trueAnom : array-like
+            True anomaly of interest.
+        
+        Returns
+        -------
+        X,Y,Z : array-like
+            Cartesian position vector components in J2000 ecliptic reference frame. Each has the same datatype and dimensions as the input.
+        """
         # true anomaly to radius
         r = self.a*((1-self.e**2)/(1+self.e*np.cos(trueAnom)))
         # pos in perifocal frame (heliocentric) z comp is 0.
@@ -104,6 +225,16 @@ class NEOvisualizer:
 ############## Non-class Function ##############
         
 def plotEarth(ax, showOrbit=True):
+    """
+    Takes in matplotlib 3d subplot axes onto which the Earth is plotted. Also plots the orbit of the Earth unless otherwised specified.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes._subplots.Axes3DSubplot
+        Axes from a 3d subplot for the position to be plotted on.
+    showOrbit (Optional) : bool
+        whether the orbit of the Earth to be displayed. Defaults to True unless otherwise specified.
+    """
     # Orbital Elements
     a = 1.00000011 # AU
     e = 0.01671022
@@ -116,11 +247,11 @@ def plotEarth(ax, showOrbit=True):
     n = 0.98560912 # deg/d
     
     elems = {'a':a, 'e':e, 'i':i, 'om':om, 'w':w, 'ma':ma, 'epoch':epoch, 'n':n}
-    ser = pd.Series(elems)
+    ser = pd.Series(elems) # construct dummy object to pass in NEOvis constructor
     earth = NEOvisualizer(ser)
     
     px,py,pz = earth.getPositionAt(earth.time)
-    ax.scatter(px,py,pz, c='green', s=25)
+    ax.scatter(px,py,pz, c='green', s=27)
         
     if showOrbit:
         # get orbit
