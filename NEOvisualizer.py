@@ -229,15 +229,16 @@ class NEOvisualizer:
         Z= x*(np.sin(self.i)*np.sin(self.w)) + y*(np.sin(self.i)*np.cos(self.w))
         return X,Y,Z
     
-### For aesthetic purposes, performance might be sacrificed
+### For aesthetic purposes (trail effect), performance might be sacrificed
     def plotBetterOrbit(self, ax, time=None, showNEO=True):
         T = self.time if time is None else time
         x,y,z = self.getPositionAt(T, returnArray=True)
+        
         # alphas = np.linspace(0,1,500)
-        # ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=alphas)   TOO BAD THIS DOESNT WORK
+        # ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=alphas)    TOO BAD THIS DOESNT WORK
         N = 5000
         step = 10
-        alphas = np.linspace(0,1, int(N/step))
+        alphas = np.linspace(0,1, int(N/step)) # varying opacity
         for i in range(int(N/step)):
             ax.plot(x[i*step:(i+1)*step],y[i*step:(i+1)*step],z[i*step:(i+1)*step], color='#ced3db', linestyle='-', alpha=alphas[i])
         if showNEO:
@@ -246,7 +247,7 @@ class NEOvisualizer:
         
 ############## Non-class Function ##############
         
-def plotEarth(ax, time=None, showOrbit=True, trail=True):
+def plotEarth(ax, time=None, showOrbit=True, trail=False):
     """
     Takes in matplotlib 3d subplot axes onto which the Earth is plotted. Also plots the orbit of the Earth unless otherwised specified.
     
@@ -257,7 +258,7 @@ def plotEarth(ax, time=None, showOrbit=True, trail=True):
     showOrbit (Optional) : bool
         whether the orbit of the Earth to be displayed. Defaults to True unless otherwise specified.
     trail (Optional) : bool
-        whether the displayed orbit to have the trail effect. Defaults to True unless otherwise specified.
+        whether the displayed orbit to have trail effect. Defaults to False unless otherwise specified.
     """
     # Orbital Elements
     a = 1.00000011 # AU
