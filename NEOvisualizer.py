@@ -71,7 +71,7 @@ class NEOvisualizer:
         x,y,z = self.trueAnom2pos(trueAnom)
         return x,y,z
     
-    def getPositionAt(self, time=None):
+    def getPositionAt(self, time=None, returnArray=False):
         """
         Returns x, y, z components (AU) of the NEO's position at either time of instance or user specified time.
         
@@ -83,11 +83,11 @@ class NEOvisualizer:
             
         Returns
         -------
-        x : float
+        x : float (or numpy array)
             x component of position at given time (AU)
-        y : float
+        y : float (or numpy array)
             y component of position at given time (AU)
-        z : float
+        z : float (or numpy array)
             z component of position at given time (AU)
         """
         
@@ -99,9 +99,17 @@ class NEOvisualizer:
         else: # if time is specified
             days_since_epoch = np.ceil(time - self.epoch)
             timeline = np.linspace(self.epoch, time, int(days_since_epoch))
-        trueAnom = self.ecc2trueAnom(self.getEccAnom(timeline))
+        #trueAnom = self.ecc2trueAnom(self.getEccAnom(timeline))
+        tempEcc = self.getEccAnom(timeline)
+        
+        N = 5000 if returnArray else 500
+        
+        eccAnom = np.linspace(tempEcc[-1] - 2*np.pi, tempEcc[-1], N) # reduce anomaly, span no more than 2pi
+        trueAnom = self.ecc2trueAnom(eccAnom)
         x,y,z = self.trueAnom2pos(trueAnom)
-        return x[-1], y[-1], z[-1] #current position
+        if returnArray is False:
+            x,y,z = x[-1],y[-1],z[-1]
+        return x,y,z
     
     def plotOrbit(self, ax, showNEO=True):
         """
@@ -120,10 +128,9 @@ class NEOvisualizer:
         ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=0.5)
         if showNEO:
             # plot NEO in today's position
-            x,y,z = self.getPositionAt(self.time)
+            nx,ny,nz = self.getPositionAt(self.time)
             colors = ['xkcd:aquamarine', 'xkcd:pink', 'xkcd:goldenrod', 'xkcd:lavender', 'xkcd:khaki']
-            ax.scatter(x,y,z, color=secrets.choice(colors), s=20)
-            
+            ax.scatter(nx,ny,nz, color=secrets.choice(colors), s=20)
         
     def plotNEO(self, ax, colorStr=None, time=None):
         """
@@ -221,10 +228,26 @@ class NEOvisualizer:
         Y= x*(np.sin(self.om)*np.cos(self.w)+np.cos(self.om)*np.cos(self.i)*np.sin(self.w)) - y*(np.sin(self.om)*np.sin(self.w)-np.cos(self.om)*np.cos(self.i)*np.cos(self.w))
         Z= x*(np.sin(self.i)*np.sin(self.w)) + y*(np.sin(self.i)*np.cos(self.w))
         return X,Y,Z
+    
+### For aesthetic purposes (trail effect), performance might be sacrificed
+    def plotBetterOrbit(self, ax, time=None, showNEO=True):
+        T = self.time if time is None else time
+        x,y,z = self.getPositionAt(T, returnArray=True)
+        
+        # alphas = np.linspace(0,1,500)
+        # ax.plot(x,y,z, color='#ced3db', linestyle='-', alpha=alphas)    TOO BAD THIS DOESNT WORK
+        N = 5000
+        step = 10
+        alphas = np.linspace(0,1, int(N/step)) # varying opacity
+        for i in range(int(N/step)):
+            ax.plot(x[i*step:(i+1)*step],y[i*step:(i+1)*step],z[i*step:(i+1)*step], color='#ced3db', linestyle='-', alpha=alphas[i])
+        if showNEO:
+            ax.scatter(x[-1],y[-1],z[-1], color='xkcd:lavender', s=20)
+            
         
 ############## Non-class Function ##############
         
-def plotEarth(ax, showOrbit=True):
+def plotEarth(ax, time=None, showOrbit=True, trail=False):
     """
     Takes in matplotlib 3d subplot axes onto which the Earth is plotted. Also plots the orbit of the Earth unless otherwised specified.
     
@@ -234,6 +257,8 @@ def plotEarth(ax, showOrbit=True):
         Axes from a 3d subplot for the position to be plotted on.
     showOrbit (Optional) : bool
         whether the orbit of the Earth to be displayed. Defaults to True unless otherwise specified.
+    trail (Optional) : bool
+        whether the displayed orbit to have trail effect. Defaults to False unless otherwise specified.
     """
     # Orbital Elements
     a = 1.00000011 # AU
@@ -250,13 +275,22 @@ def plotEarth(ax, showOrbit=True):
     ser = pd.Series(elems) # construct dummy object to pass in NEOvis constructor
     earth = NEOvisualizer(ser)
     
-    px,py,pz = earth.getPositionAt(earth.time)
+    T = earth.time if time is None else time
+    px,py,pz = earth.getPositionAt(T)
     ax.scatter(px,py,pz, c='green', s=27)
-        
+    
     if showOrbit:
-        # get orbit
-        ecc = np.linspace(-np.pi, np.pi, 500)
-        trueAnom = earth.ecc2trueAnom(ecc)
-        x,y,z = earth.trueAnom2pos(trueAnom)
-        # plot orbit
-        ax.plot(x,y,z, color='#89ad93', linestyle='-')
+        if trail:
+            x,y,z = earth.getPositionAt(T, returnArray=True)
+            N = 5000
+            step = 10
+            alphas = np.linspace(0,1, int(N/step))
+            for i in range(int(N/step)): 
+                ax.plot(x[i*step:(i+1)*step],y[i*step:(i+1)*step],z[i*step:(i+1)*step], color='#89ad93', linestyle='-', alpha=alphas[i])
+        else:
+            # get orbit
+            ecc = np.linspace(-np.pi, np.pi, 500)
+            trueAnom = earth.ecc2trueAnom(ecc)
+            x,y,z = earth.trueAnom2pos(trueAnom)
+            # plot orbit
+            ax.plot(x,y,z, color='#89ad93', linestyle='-')
